@@ -61,5 +61,30 @@ class ExtensionSummaryTests(unittest.TestCase):
             self.assertIn("[no extension]", included.stdout)
 
 
+    def test_cli_reports_missing_directory_as_usage_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "does-not-exist"
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(missing)],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("Not a directory:", result.stderr)
+
+    def test_cli_orders_by_count_then_extension_name(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for filename in ("one.TXT", "two.txt", "one.py", "two.PY", "single.md"):
+                (root / filename).write_text("", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(root)],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(
+                [line.split()[0] for line in result.stdout.splitlines()],
+                [".py", ".txt", ".md"],
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
