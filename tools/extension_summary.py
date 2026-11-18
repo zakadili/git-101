@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Summarize local file extensions, excluding symlinks and build directories."""
 import argparse
+import json
 import os
 from collections import Counter
 from pathlib import Path
@@ -31,14 +32,21 @@ def main() -> None:
         "--include-build-dirs", action="store_true",
         help="Include .git, virtual environments, node_modules and __pycache__",
     )
+    parser.add_argument(
+        "--json", action="store_true",
+        help="Output extension counts as a JSON object for scripts",
+    )
     args = parser.parse_args()
     root = Path(args.directory).expanduser()
     if not root.is_dir():
         parser.error(f"Not a directory: {root}")
     excluded = () if args.include_build_dirs else DEFAULT_EXCLUDED_DIRS
     counts = count_extensions(root, excluded_dirs=excluded)
-    for ext, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])):
-        print(f"{ext:20} {count}")
+    if args.json:
+        print(json.dumps(dict(sorted(counts.items())), indent=2))
+    else:
+        for ext, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])):
+            print(f"{ext:20} {count}")
 
 
 if __name__ == "__main__":
