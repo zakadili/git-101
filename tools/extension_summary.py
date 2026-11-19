@@ -33,6 +33,10 @@ def main() -> None:
         help="Include .git, virtual environments, node_modules and __pycache__",
     )
     parser.add_argument(
+        "--exclude-dir", action="append", default=[], metavar="NAME",
+        help="Exclude a directory name at any depth (repeatable)",
+    )
+    parser.add_argument(
         "--json", action="store_true",
         help="Output extension counts as a JSON object for scripts",
     )
@@ -40,7 +44,11 @@ def main() -> None:
     root = Path(args.directory).expanduser()
     if not root.is_dir():
         parser.error(f"Not a directory: {root}")
-    excluded = () if args.include_build_dirs else DEFAULT_EXCLUDED_DIRS
+    for name in args.exclude_dir:
+        if name in (".", "..") or name != Path(name).name or not name:
+            parser.error(f"--exclude-dir expects a directory name, not a path: {name!r}")
+    excluded = set() if args.include_build_dirs else set(DEFAULT_EXCLUDED_DIRS)
+    excluded.update(args.exclude_dir)
     counts = count_extensions(root, excluded_dirs=excluded)
     if args.json:
         print(json.dumps(dict(sorted(counts.items())), indent=2))
