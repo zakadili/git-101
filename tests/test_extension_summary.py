@@ -86,5 +86,28 @@ class ExtensionSummaryTests(unittest.TestCase):
             )
 
 
+    def test_cli_json_and_custom_exclusion(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "skip").mkdir()
+            (root / "skip" / "ignored.py").write_text("", encoding="utf-8")
+            (root / "keep.PY").write_text("", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(root), "--json", "--exclude-dir", "skip"],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(result.stdout), {".py": 1})
+
+    def test_cli_rejects_exclusion_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), directory, "--exclude-dir", "foo/bar"],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("expects a directory name", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
