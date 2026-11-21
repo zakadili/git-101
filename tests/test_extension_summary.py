@@ -109,5 +109,37 @@ class ExtensionSummaryTests(unittest.TestCase):
             self.assertIn("expects a directory name", result.stderr)
 
 
+    def test_cli_custom_exclusion_applies_at_every_depth(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "skip").mkdir()
+            (root / "skip" / "first.py").write_text("", encoding="utf-8")
+            (root / "nested").mkdir()
+            (root / "nested" / "skip").mkdir()
+            (root / "nested" / "skip" / "second.py").write_text("", encoding="utf-8")
+            (root / "nested" / "keep.py").write_text("", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(root), "--exclude-dir", "skip", "--json"],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(result.stdout), {".py": 1})
+
+    def test_cli_custom_exclusion_still_applies_when_build_dirs_included(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".git").mkdir()
+            (root / ".git" / "config").write_text("", encoding="utf-8")
+            (root / "skip").mkdir()
+            (root / "skip" / "ignored.py").write_text("", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(root), "--include-build-dirs",
+                 "--exclude-dir", "skip", "--json"],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(result.stdout), {"[no extension]": 1})
+
+
 if __name__ == "__main__":
     unittest.main()
