@@ -141,5 +141,29 @@ class ExtensionSummaryTests(unittest.TestCase):
             self.assertEqual(json.loads(result.stdout), {"[no extension]": 1})
 
 
+    def test_cli_empty_directory_outputs_empty_json(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), directory, "--json"],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(result.stdout), {})
+
+    def test_cli_multiple_excluded_directory_names(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ("cache", "generated", "src"):
+                (root / name).mkdir()
+                (root / name / "file.py").write_text("", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(root), "--json",
+                 "--exclude-dir", "cache", "--exclude-dir", "generated"],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(result.stdout), {".py": 1})
+
+
 if __name__ == "__main__":
     unittest.main()
