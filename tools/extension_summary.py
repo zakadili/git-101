@@ -40,8 +40,8 @@ def main() -> None:
         "--json", action="store_true",
         help="Output extension counts as a JSON object for scripts",
     )
-    args = parser.parse_args()
-    root = Path(args.directory).expanduser()
+    parser.add_argument(\n        "--min-count", type=int, default=1, metavar="N",\n        help="Show only extensions with at least N files (default: 1)",\n    )\n    args = parser.parse_args()
+    if args.min_count < 1:\n        parser.error("--min-count must be a positive integer")\n    root = Path(args.directory).expanduser()
     if not root.is_dir():
         parser.error(f"Not a directory: {root}")
     for name in args.exclude_dir:
