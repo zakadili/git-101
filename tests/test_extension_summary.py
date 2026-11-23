@@ -165,5 +165,26 @@ class ExtensionSummaryTests(unittest.TestCase):
             self.assertEqual(json.loads(result.stdout), {".py": 1})
 
 
+    def test_cli_min_count_filters_rare_extensions(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for filename in ("one.py", "two.PY", "single.md"):
+                (root / filename).write_text("", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(root), "--min-count", "2", "--json"],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(result.stdout), {".py": 2})
+
+    def test_cli_min_count_rejects_nonpositive_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), directory, "--min-count", "0"],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("--min-count must be a positive integer", result.stderr)
+
 if __name__ == "__main__":
     unittest.main()
