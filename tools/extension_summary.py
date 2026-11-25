@@ -48,6 +48,8 @@ def main() -> None:
     if args.min_count < 1:
         parser.error("--min-count must be a positive integer")
     root = Path(args.directory).expanduser()
+    if root.is_symlink():
+        parser.error(f"Directory must not be a symlink: {root}")
     if not root.is_dir():
         parser.error(f"Not a directory: {root}")
     for name in args.exclude_dir:
