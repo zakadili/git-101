@@ -9,10 +9,15 @@ from pathlib import Path
 DEFAULT_EXCLUDED_DIRS = frozenset({".git", ".venv", "venv", "node_modules", "__pycache__"})
 
 
+def _raise_walk_error(error: OSError) -> None:
+    """Do not silently return incomplete counts when a directory cannot be read."""
+    raise error
+
+
 def count_extensions(root: Path, excluded_dirs=DEFAULT_EXCLUDED_DIRS) -> Counter:
     """Count files by lowercase suffix, without traversing symlinked directories."""
     counts = Counter()
-    for directory, subdirs, filenames in os.walk(root, followlinks=False):
+    for directory, subdirs, filenames in os.walk(root, followlinks=False, onerror=_raise_walk_error):
         subdirs[:] = [
             name for name in subdirs
             if name not in excluded_dirs and not (Path(directory) / name).is_symlink()
@@ -57,7 +62,10 @@ def main() -> None:
             parser.error(f"--exclude-dir expects a directory name, not a path: {name!r}")
     excluded = set() if args.include_build_dirs else set(DEFAULT_EXCLUDED_DIRS)
     excluded.update(args.exclude_dir)
-    counts = count_extensions(root, excluded_dirs=excluded)
+    try:
+        counts = count_extensions(root, excluded_dirs=excluded)
+    except OSError as error:
+        parser.error(f"Cannot scan directory: {error}")
     counts = {ext: count for ext, count in counts.items() if count >= args.min_count}
     if args.json:
         print(json.dumps(dict(sorted(counts.items())), indent=2))
