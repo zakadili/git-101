@@ -6,7 +6,7 @@ import os
 from collections import Counter
 from pathlib import Path
 
-DEFAULT_EXCLUDED_DIRS = frozenset({".git", ".venv", "venv", "node_modules", "__pycache__"})
+DEFAULT_EXCLUDED_DIRS = frozenset({".git", ".venv", "venv", "node_modules", "__pycache__", "build", "dist"})
 
 
 def _raise_walk_error(error: OSError) -> None:
@@ -35,7 +35,7 @@ def main() -> None:
     parser.add_argument("directory", nargs="?", default=".")
     parser.add_argument(
         "--include-build-dirs", action="store_true",
-        help="Include .git, virtual environments, node_modules and __pycache__",
+        help="Include .git, virtual environments, node_modules, __pycache__, build and dist",
     )
     parser.add_argument(
         "--exclude-dir", action="append", default=[], metavar="NAME",
